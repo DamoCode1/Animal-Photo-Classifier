@@ -10,5 +10,13 @@
             <p>Test image: <input type="file" name="testImage" accept="image/*"></p>
             <button type="submit" name="action" value = "runTest">Submit</button>
         </form>
+    {% if prediction %}
+        <h1>Probabilities:</h1>
+        <p>Cat = {{(cat * 100) | round(2)}}</p>
+        <p>Dog = {{(dog * 100) | round(2)}}</p>
+        <p>Elephant = {{(elephant * 100) | round(2)}}</p>
+        <p>Horse = {{(horse * 100) | round(2)}}</p>
+        <p>Lion = {{(lion * 100) | round(2)}}</p>
+    {% endif %}
     </body>
 </html>
