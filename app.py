@@ -55,9 +55,11 @@ class cnn(torch.nn.Module):
         x = self.fc6(x)
         return x
 
+global model
 device = torch.device("xpu" if torch.xpu.is_available() else "cpu")
 
-def runTraining(model, epochCount = 1):
+def runTraining(epochCount = 1):
+    model = cnn().to(device)
     trainingSet = torchvision.datasets.ImageFolder("animals/train", trainTransform)
     trainingLoader = torch.utils.data.DataLoader(trainingSet, 32, True)
     testingSet = torchvision.datasets.ImageFolder("animals/val", testTransform)
@@ -101,7 +103,7 @@ def runTraining(model, epochCount = 1):
                 curPrediction = outputs.argmax(1)
                 correct += curPrediction.eq(labels).sum().item()
                 total += labels.size(0)
-        print("Average loss: ", lossSum / len(testingLoader), " - Accuracy: ", correct / total)
+        print("Epoch ", i, " - Average loss: ", lossSum / len(testingLoader), " - Accuracy: ", correct / total)
 
     torch.save(model.state_dict(), "cnn.pth")
 
@@ -117,7 +119,8 @@ def train():
         action = request.form.get("action")
         epochCount = int(request.form.get("epochCount"))
         if action == "beginTrain":
-            runTraining(model, epochCount)
+            runTraining(epochCount)
+            return render_template("train.html", message="Training complete!")
     return render_template("train.html")
 
 @app.route("/test", methods=['GET', 'POST'])
@@ -139,12 +142,6 @@ def test():
     return render_template("test.html", prediction=False, cat=0.0, dog=0.0, elephant=0.0, horse=0.0, lion=0.0)
 
 if __name__ == "__main__":
-    model = cnn()
-    try:
-        model.load_state_dict(torch.load("cnn.pth", map_location="cpu"))
-    except:
-        print("Couldn't find suitable pair model, created empty model")
-
     trainTransform = v2.Compose([
         v2.Resize((224, 224)),
         v2.RandomHorizontalFlip(),
@@ -160,7 +157,11 @@ if __name__ == "__main__":
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize([0.472, 0.441, 0.392], [0.241, 0.235, 0.229])
     ])
-    model = model.to(device)
+    model = cnn().to(device)
+    try:
+        model.load_state_dict(torch.load("cnn.pth", map_location="cpu"))
+    except:
+        print("Couldn't find suitable pair model, created empty model")
 
     print(torch.xpu.is_available())  # Need to add support for intel gpu
     print(torch.xpu.device_count())
